@@ -47,6 +47,20 @@ Command  : Rubeus.exe kerberoast /user:targetuser /domain:example.com /rc4opsec
 Link     : https://book.hacktricks.xyz/.../kerberoasting
 ```
 
+## 📸 Demo Screenshots
+
+### 🔷 Main Menu
+
+
+### 🔧 Tool Panel
+
+
+### 🔍 Search Result
+
+
+### 🔁 Restart Option
+
+
 ## 🤝 Contributing
 
 Pull requests and suggestions are welcome!
