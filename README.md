@@ -50,16 +50,16 @@ Link     : https://book.hacktricks.xyz/.../kerberoasting
 ## 📸 Demo Screenshots
 
 ### 🔷 Main Menu
-
+![Main Menu](https://github.com/parthmishra24/snortmap/blob/main/screenshots/snortmap-menu.png)
 
 ### 🔧 Tool Panel
-
+![Tool Panel](https://github.com/parthmishra24/snortmap/blob/main/screenshots/snortmap-tool-panel.png)
 
 ### 🔍 Search Result
-
+![Search Result](https://github.com/parthmishra24/snortmap/blob/main/screenshots/snortmap-search-result.png)
 
 ### 🔁 Restart Option
-
+![Restart Option](https://github.com/parthmishra24/snortmap/blob/main/screenshots/snortmap-start-over.png)
 
 ## 🤝 Contributing
 
