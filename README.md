@@ -15,8 +15,14 @@
 
 ```bash
 git clone https://github.com/parthmishra24/snortmap.git
+```
+```
 cd snortmap
+```
+```
 pip install -r requirements.txt
+```
+```
 python -m cli.main
 ```
 
