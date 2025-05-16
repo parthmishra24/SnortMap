@@ -167,7 +167,7 @@ def main():
     access_levels = list(attack_data[domain].keys())
 
     access = questionary.select(
-        f"What is your access level in [bold]{domain}[/bold]?",
+        f"What is your access level in {domain}?",
         choices=access_levels
     ).ask()
 
