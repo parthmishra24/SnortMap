@@ -1,115 +1,186 @@
 import json
-import argparse
 import questionary
-from pathlib import Path
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+import pyperclip
+from utils.loader import load_attack_vectors
 
-DATA_PATH = Path("../data/attack_vectors.json")
+console = Console()
 
-def load_data():
-    if not DATA_PATH.exists():
-        print("attack_vectors.json not found. Creating a new one.")
-        DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
-        DATA_PATH.write_text("{}")
-    with open(DATA_PATH, "r") as f:
-        return json.load(f)
+def print_attack_info(domain, vectors):
+    if not vectors:
+        console.print("[yellow]Warning: No attack vectors found for this selection.[/yellow]")
+        return False
 
-def save_data(data):
-    with open(DATA_PATH, "w") as f:
-        json.dump(data, f, indent=2)
-    print("\n✅ Entry successfully saved.")
+    attack_choices = []
+    attack_map = {}
 
-def prompt_for_domain(data):
-    if not data:
-        print("No existing domains found. Please add a new one.")
-        return questionary.text("Enter new domain:").ask()
-    if questionary.confirm("Do you want to add a new domain?").ask():
-        return questionary.text("Enter new domain:").ask()
+    for atk, details in vectors.items():
+        if isinstance(details, dict) and 'tools' in details:
+            label = f"{atk} - {details.get('description', '')}"
+            attack_choices.append(label)
+            attack_map[label] = atk
+        else:
+            attack_choices.append(atk)
+            attack_map[atk] = atk
+
+    attack_choice_str = questionary.select(
+        "Select an attack to explore further:",
+        choices=attack_choices
+    ).ask()
+
+    if not attack_choice_str:
+        console.print("[red]Cancelled by user.[/red]")
+        return False
+
+    attack_choice = attack_map[attack_choice_str]
+    attack_block = vectors[attack_choice]
+
+    if isinstance(attack_block, dict):
+        tools = attack_block.get("tools", attack_block)
+        if isinstance(tools, dict):
+            tool_choice = questionary.select(
+                "Select a tool to view details:",
+                choices=list(tools.keys())
+            ).ask()
+
+            if not tool_choice:
+                console.print("[red]Cancelled by user.[/red]")
+                return False
+
+            tool_data = tools[tool_choice]
+            tool_name = tool_choice
+            command = tool_data.get("command", "No command available.")
+            link = tool_data.get("link", "No reference link provided.")
+
+            panel = Panel.fit(
+                f"[bold magenta]Tool:[/bold magenta] {tool_name}\n"
+                f"[bold yellow]Command:[/bold yellow] [green]{command}[/green]\n"
+                f"[bold blue]Link:[/bold blue] {link}",
+                title="Attack Step",
+                border_style="cyan"
+            )
+            console.print(panel)
+
+            if questionary.confirm("Copy this command to clipboard?").ask():
+                pyperclip.copy(command)
+                console.print("[dim]Command copied to clipboard[/dim]")
+
+    return True
+
+def search_index(data, query):
+    results = []
+    query = query.lower()
+    for entry in data:
+        if any(query in str(value).lower() for value in entry.values()):
+            results.append(entry)
+    return results
+
+def display_results(results):
+    if not results:
+        console.print("[bold red]No matches found.[/bold red]")
+        return False
+
+    table = Table(show_lines=True)
+    table.add_column("Domain", style="cyan", no_wrap=True)
+    table.add_column("Access Level", style="magenta")
+    table.add_column("Attack", style="bold yellow")
+    table.add_column("Tool", style="green")
+    table.add_column("Command", style="white")
+    table.add_column("Link", style="blue")
+
+    for item in results:
+        table.add_row(
+            item["domain"],
+            item["access_level"],
+            item["attack"],
+            item["tool"],
+            item["command"],
+            item["link"]
+        )
+
+    console.print(table)
+    return True
+
+def restart_or_exit():
+    next_action = questionary.select("Would you like to:", choices=["Start Over", "Exit"]).ask()
+    if next_action == "Start Over":
+        main()
     else:
-        return questionary.select("Select an existing domain:", choices=list(data.keys())).ask()
+        console.print("[bold red]Goodbye from SnortMap![/bold red]")
+        exit()
 
-def prompt_for_access_level(domain_data):
-    if not domain_data:
-        print("No existing access levels found. Please add a new one.")
-        return questionary.text("Enter new access level:").ask()
-    if questionary.confirm("Do you want to add a new access level?").ask():
-        return questionary.text("Enter new access level:").ask()
-    else:
-        return questionary.select("Select an existing access level:", choices=list(domain_data.keys())).ask()
+def run_search():
+    try:
+        with open("data/search_index_attack_vectors.json", "r") as f:
+            index = json.load(f)
+    except Exception as e:
+        console.print(f"[red]Error loading search index: {e}[/red]")
+        return False
 
-def add_entry():
-    data = load_data()
+    query = questionary.text("Enter search keyword:").ask()
+    if not query:
+        console.print("[red]No input provided.[/red]")
+        return False
 
-    domain = prompt_for_domain(data)
-    if domain not in data:
-        data[domain] = {}
-
-    access = prompt_for_access_level(data[domain])
-    if access not in data[domain]:
-        data[domain][access] = {}
-
-    attack = questionary.text("Enter attack name:").ask()
-    description = questionary.text("Enter description for this attack:").ask()
-    tool = questionary.text("Enter tool name:").ask()
-    command = questionary.text("Enter command:").ask()
-    link = questionary.text("Enter reference link (optional):").ask()
-
-    if attack not in data[domain][access]:
-        data[domain][access][attack] = {
-            "description": description,
-            "tools": {}
-        }
-
-    data[domain][access][attack]["tools"][tool] = {
-        "command": command,
-        "link": link
-    }
-
-    save_data(data)
-
-def delete_entry():
-    data = load_data()
-    domain = questionary.select("Select domain:", choices=list(data.keys())).ask()
-    access = questionary.select("Select access level:", choices=list(data[domain].keys())).ask()
-    attack = questionary.select("Select attack to delete:", choices=list(data[domain][access].keys())).ask()
-
-    del data[domain][access][attack]
-
-    if not data[domain][access]:
-        del data[domain][access]
-    if not data[domain]:
-        del data[domain]
-
-    save_data(data)
-
-def edit_entry():
-    data = load_data()
-    domain = questionary.select("Select domain:", choices=list(data.keys())).ask()
-    access = questionary.select("Select access level:", choices=list(data[domain].keys())).ask()
-    attack = questionary.select("Select attack to edit:", choices=list(data[domain][access].keys())).ask()
-
-    description = questionary.text("Edit description:", default=data[domain][access][attack]["description"]).ask()
-    tool = questionary.select("Select tool to edit:", choices=list(data[domain][access][attack]["tools"].keys())).ask()
-    command = questionary.text("Edit command:", default=data[domain][access][attack]["tools"][tool]["command"]).ask()
-    link = questionary.text("Edit reference link:", default=data[domain][access][attack]["tools"][tool]["link"]).ask()
-
-    data[domain][access][attack]["description"] = description
-    data[domain][access][attack]["tools"][tool] = {"command": command, "link": link}
-
-    save_data(data)
+    matches = search_index(index, query)
+    return display_results(matches)
 
 def main():
-    parser = argparse.ArgumentParser(description="Manage SnortMap Knowledge Base")
-    parser.add_argument("--add", action="store_true", help="Add new attack method")
-    parser.add_argument("--delete", action="store_true", help="Delete an attack method")
-    parser.add_argument("--edit", action="store_true", help="Edit an existing attack method")
-    args = parser.parse_args()
+    attack_data = load_attack_vectors()
 
-    if args.add:
-        add_entry()
-    elif args.delete:
-        delete_entry()
-    elif args.edit:
-        edit_entry()
+    console.print("""
+[bold cyan]
+╔═════════════════════════════════════════════╗
+║               SnortMap CLI                 ║
+╠═════════════════════════════════════════════╣
+║  Explore domains • Simulate attack paths   ║
+║  Learn tools • Copy payloads instantly     ║
+╚═════════════════════════════════════════════╝
+[/bold cyan]
+""")
+
+    choice = questionary.select(
+        "What would you like to do?",
+        choices=["Explore by Domain", "Search by Keyword"]
+    ).ask()
+
+    if not choice:
+        console.print("[red]Cancelled by user.[/red]")
+        return
+
+    if choice == "Search by Keyword":
+        if run_search():
+            restart_or_exit()
+        return
+
+    domain = questionary.select(
+        "Select a domain to explore:",
+        choices=list(attack_data.keys())
+    ).ask()
+
+    if not domain:
+        console.print("[red]No domain selected. Exiting.[/red]")
+        return
+
+    access_levels = list(attack_data[domain].keys())
+
+    access = questionary.select(
+        f"What is your access level in [bold]{domain}[/bold]?",
+        choices=access_levels
+    ).ask()
+
+    if not access:
+        console.print("[red]No access level selected. Exiting.[/red]")
+        return
+
+    vectors = attack_data[domain][access]
+    if print_attack_info(domain, vectors):
+        restart_or_exit()
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        console.print("\n[red]Exiting on user interrupt.[/red]")
