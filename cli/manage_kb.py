@@ -37,6 +37,13 @@ def prompt_for_access_level(domain_data):
     else:
         return questionary.select("Select an existing access level:", choices=list(domain_data.keys())).ask()
 
+def prompt_for_attack_name(access_data):
+    existing_attacks = list(access_data.keys())
+    if existing_attacks and questionary.confirm("Do you want to select an existing attack?").ask():
+        return questionary.select("Select an existing attack:", choices=existing_attacks).ask()
+    else:
+        return questionary.text("Enter attack name:").ask()
+
 def add_entry():
     data = load_data()
 
@@ -56,41 +63,46 @@ def add_entry():
     if access not in data[domain]:
         data[domain][access] = {}
 
-    attack = questionary.text("Enter attack name:").ask()
+    attack = prompt_for_attack_name(data[domain][access])
     if not attack:
         print("[red]Cancelled by user. Exiting...[/red]")
         return
 
-    description = questionary.text("Enter description for this attack:").ask()
-    if not description:
-        print("[red]Cancelled by user. Exiting...[/red]")
-        return
-
-    tool = questionary.text("Enter tool name:").ask()
-    if not tool:
-        print("[red]Cancelled by user. Exiting...[/red]")
-        return
-
-    command = questionary.text("Enter command:").ask()
-    if not command:
-        print("[red]Cancelled by user. Exiting...[/red]")
-        return
-
-    link = questionary.text("Enter reference link (optional):").ask()
-    if link is None:
-        print("[red]Cancelled by user. Exiting...[/red]")
-        return
-
     if attack not in data[domain][access]:
+        description = questionary.text("Enter description for this attack:").ask()
+        if not description:
+            print("[red]Cancelled by user. Exiting...[/red]")
+            return
+
         data[domain][access][attack] = {
             "description": description,
             "tools": {}
         }
 
-    data[domain][access][attack]["tools"][tool] = {
-        "command": command,
-        "link": link
-    }
+    while True:
+        tool = questionary.text("Enter tool name:").ask()
+        if not tool:
+            print("[red]Cancelled by user. Exiting...[/red]")
+            return
+
+        command = questionary.text("Enter command:").ask()
+        if not command:
+            print("[red]Cancelled by user. Exiting...[/red]")
+            return
+
+        link = questionary.text("Enter reference link (optional):").ask()
+        if link is None:
+            print("[red]Cancelled by user. Exiting...[/red]")
+            return
+
+        data[domain][access][attack]["tools"][tool] = {
+            "command": command,
+            "link": link
+        }
+
+        add_another = questionary.confirm("Do you want to add another tool for this attack?").ask()
+        if not add_another:
+            break
 
     save_data(data)
 
@@ -110,17 +122,30 @@ def delete_entry():
         print("[red]Cancelled by user. Exiting...[/red]")
         return
 
-    attack = questionary.select("Select attack to delete:", choices=list(data[domain][access].keys())).ask()
+    attack = questionary.select("Select attack:", choices=list(data[domain][access].keys())).ask()
     if not attack:
         print("[red]Cancelled by user. Exiting...[/red]")
         return
 
-    del data[domain][access][attack]
+    delete_choice = questionary.select(
+        "What do you want to delete?",
+        choices=["Entire vulnerability", "Only a specific tool"]
+    ).ask()
 
-    if not data[domain][access]:
-        del data[domain][access]
-    if not data[domain]:
-        del data[domain]
+    if delete_choice == "Entire vulnerability":
+        del data[domain][access][attack]
+        if not data[domain][access]:
+            del data[domain][access]
+        if not data[domain]:
+            del data[domain]
+    else:
+        tools = list(data[domain][access][attack]["tools"].keys())
+        if not tools:
+            print("[red]No tools found under this attack to delete.[/red]")
+            return
+        tool = questionary.select("Select tool to delete:", choices=tools).ask()
+        if tool:
+            del data[domain][access][attack]["tools"][tool]
 
     save_data(data)
 
@@ -162,7 +187,7 @@ def edit_entry():
 def main():
     parser = argparse.ArgumentParser(description="Manage SnortMap Knowledge Base")
     parser.add_argument("--add", action="store_true", help="Add new attack method")
-    parser.add_argument("--delete", action="store_true", help="Delete an attack method")
+    parser.add_argument("--delete", action="store_true", help="Delete an attack method or tool")
     parser.add_argument("--edit", action="store_true", help="Edit an existing attack method")
     args = parser.parse_args()
 
