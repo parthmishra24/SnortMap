@@ -61,6 +61,40 @@ Link     : https://book.hacktricks.xyz/.../kerberoasting
 ### 🔁 Restart Option
 ![Restart Option](https://github.com/parthmishra24/snortmap/blob/main/screenshots/snortmap-start-over.png)
 
+## 🧠 Knowledge Base Manager (manage_kb.py)
+
+### Run:
+
+```
+python cli/manage_kb.py --add
+python cli/manage_kb.py --edit
+python cli/manage_kb.py --delete
+```
+
+### Add (--add)
+
+- Select or create domain and access level
+
+- Choose to select an existing attack or create a new one
+
+- Add multiple tools for the same attack with commands and links
+
+### Edit (--edit)
+
+- Navigate by domain/access/attack
+
+- Update description, command, or link of a specific tool
+
+### Delete (--delete)
+
+- Choose domain → access level → attack
+
+- Decide whether to:
+
+  - Delete the entire attack/vulnerability, or
+
+  - Delete a specific tool under that attack
+
 ## 🤝 Contributing
 
 Pull requests and suggestions are welcome!
