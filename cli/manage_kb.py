@@ -2,6 +2,7 @@ import json
 import argparse
 import questionary
 from pathlib import Path
+import sys
 
 DATA_PATH = Path("../data/attack_vectors.json")
 
@@ -40,18 +41,45 @@ def add_entry():
     data = load_data()
 
     domain = prompt_for_domain(data)
+    if not domain:
+        print("[red]Cancelled by user. Exiting...[/red]")
+        return
+
     if domain not in data:
         data[domain] = {}
 
     access = prompt_for_access_level(data[domain])
+    if not access:
+        print("[red]Cancelled by user. Exiting...[/red]")
+        return
+
     if access not in data[domain]:
         data[domain][access] = {}
 
     attack = questionary.text("Enter attack name:").ask()
+    if not attack:
+        print("[red]Cancelled by user. Exiting...[/red]")
+        return
+
     description = questionary.text("Enter description for this attack:").ask()
+    if not description:
+        print("[red]Cancelled by user. Exiting...[/red]")
+        return
+
     tool = questionary.text("Enter tool name:").ask()
+    if not tool:
+        print("[red]Cancelled by user. Exiting...[/red]")
+        return
+
     command = questionary.text("Enter command:").ask()
+    if not command:
+        print("[red]Cancelled by user. Exiting...[/red]")
+        return
+
     link = questionary.text("Enter reference link (optional):").ask()
+    if link is None:
+        print("[red]Cancelled by user. Exiting...[/red]")
+        return
 
     if attack not in data[domain][access]:
         data[domain][access][attack] = {
@@ -68,9 +96,24 @@ def add_entry():
 
 def delete_entry():
     data = load_data()
+    if not data:
+        print("[red]No data found to delete.[/red]")
+        return
+
     domain = questionary.select("Select domain:", choices=list(data.keys())).ask()
+    if not domain:
+        print("[red]Cancelled by user. Exiting...[/red]")
+        return
+
     access = questionary.select("Select access level:", choices=list(data[domain].keys())).ask()
+    if not access:
+        print("[red]Cancelled by user. Exiting...[/red]")
+        return
+
     attack = questionary.select("Select attack to delete:", choices=list(data[domain][access].keys())).ask()
+    if not attack:
+        print("[red]Cancelled by user. Exiting...[/red]")
+        return
 
     del data[domain][access][attack]
 
@@ -83,14 +126,33 @@ def delete_entry():
 
 def edit_entry():
     data = load_data()
+    if not data:
+        print("[red]No data available to edit.[/red]")
+        return
+
     domain = questionary.select("Select domain:", choices=list(data.keys())).ask()
+    if not domain:
+        print("[red]Cancelled by user. Exiting...[/red]")
+        return
+
     access = questionary.select("Select access level:", choices=list(data[domain].keys())).ask()
+    if not access:
+        print("[red]Cancelled by user. Exiting...[/red]")
+        return
+
     attack = questionary.select("Select attack to edit:", choices=list(data[domain][access].keys())).ask()
+    if not attack:
+        print("[red]Cancelled by user. Exiting...[/red]")
+        return
 
     description = questionary.text("Edit description:", default=data[domain][access][attack]["description"]).ask()
     tool = questionary.select("Select tool to edit:", choices=list(data[domain][access][attack]["tools"].keys())).ask()
     command = questionary.text("Edit command:", default=data[domain][access][attack]["tools"][tool]["command"]).ask()
     link = questionary.text("Edit reference link:", default=data[domain][access][attack]["tools"][tool]["link"]).ask()
+
+    if not description or not tool or not command or link is None:
+        print("[red]Cancelled by user. Exiting...[/red]")
+        return
 
     data[domain][access][attack]["description"] = description
     data[domain][access][attack]["tools"][tool] = {"command": command, "link": link}
@@ -112,4 +174,8 @@ def main():
         edit_entry()
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n[red]✋ Operation cancelled by user. Exiting...[/red]")
+        sys.exit(0)
