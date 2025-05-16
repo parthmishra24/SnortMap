@@ -1,160 +1,115 @@
 import json
-import os
-import sys
-from pathlib import Path
+import argparse
 import questionary
-from questionary import Choice
-from rich.console import Console
-from rapidfuzz import process, fuzz
-import signal
+from pathlib import Path
 
-console = Console()
+DATA_PATH = Path("../data/attack_vectors.json")
 
-KB_PATH = "data/attack_vectors.json"
-INDEX_PATH = "data/search_index_attack_vectors.json"
-
-def handle_sigint(signum, frame):
-    console.print("\n[red]❌ Exiting tool immediately on user interrupt (Ctrl+C).[/red]")
-    sys.exit(0)
-
-signal.signal(signal.SIGINT, handle_sigint)
-
-def prompt_or_exit(prompt):
-    value = prompt.ask()
-    if value is None:
-        console.print("[red]❌ Cancelled by user.[/red]")
-        sys.exit(0)
-    return value
-
-def load_json(path):
-    if not os.path.exists(path):
-        return {}
-    with open(path, "r") as f:
+def load_data():
+    if not DATA_PATH.exists():
+        print("attack_vectors.json not found. Creating a new one.")
+        DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
+        DATA_PATH.write_text("{}")
+    with open(DATA_PATH, "r") as f:
         return json.load(f)
 
-def save_json(path, data):
-    with open(path, "w") as f:
+def save_data(data):
+    with open(DATA_PATH, "w") as f:
         json.dump(data, f, indent=2)
+    print("\n✅ Entry successfully saved.")
 
-def update_search_index(data):
-    search_index = []
-    for domain, access_data in data.items():
-        for access, attacks in access_data.items():
-            for attack_name, attack_info in attacks.items():
-                description = attack_info.get("description", "")
-                tools = attack_info.get("tools", {})
-                for tool_name, tool in tools.items():
-                    search_index.append({
-                        "domain": domain,
-                        "access_level": access,
-                        "attack": attack_name,
-                        "description": description,
-                        "tool": tool_name,
-                        "command": tool.get("command", ""),
-                        "link": tool.get("link", "")
-                    })
-    save_json(INDEX_PATH, search_index)
-    console.print("[green]✔ Search index updated.[/green]")
+def prompt_for_domain(data):
+    if not data:
+        print("No existing domains found. Please add a new one.")
+        return questionary.text("Enter new domain:").ask()
+    if questionary.confirm("Do you want to add a new domain?").ask():
+        return questionary.text("Enter new domain:").ask()
+    else:
+        return questionary.select("Select an existing domain:", choices=list(data.keys())).ask()
 
-def autocomplete_from(options, prompt="Choose:"):
-    user_input = prompt_or_exit(questionary.text(prompt))
-    best_matches = process.extract(user_input, options, scorer=fuzz.WRatio, limit=5)
-    choice = prompt_or_exit(questionary.select("Select closest match:", choices=[Choice(m[0]) for m in best_matches]))
-    return choice
+def prompt_for_access_level(domain_data):
+    if not domain_data:
+        print("No existing access levels found. Please add a new one.")
+        return questionary.text("Enter new access level:").ask()
+    if questionary.confirm("Do you want to add a new access level?").ask():
+        return questionary.text("Enter new access level:").ask()
+    else:
+        return questionary.select("Select an existing access level:", choices=list(domain_data.keys())).ask()
 
 def add_entry():
-    console.print("[bold cyan]➕ Add a new knowledge base entry[/bold cyan]")
-    kb = load_json(KB_PATH)
+    data = load_data()
 
-    domain = prompt_or_exit(questionary.text("Domain (e.g., Web Application Security, Active Directory)"))
-    access = prompt_or_exit(questionary.text("Access Level (e.g., User, Admin, No Access)"))
-    attack = prompt_or_exit(questionary.text("Attack Name"))
+    domain = prompt_for_domain(data)
+    if domain not in data:
+        data[domain] = {}
 
-    if domain in kb and access in kb[domain] and attack in kb[domain][access]:
-        console.print("[red]❗ Entry already exists. Use --edit to modify it.[/red]")
-        return
+    access = prompt_for_access_level(data[domain])
+    if access not in data[domain]:
+        data[domain][access] = {}
 
-    description = prompt_or_exit(questionary.text("Attack Description"))
-    tool = prompt_or_exit(questionary.text("Tool Name"))
-    command = prompt_or_exit(questionary.text("Command Example"))
-    link = prompt_or_exit(questionary.text("Reference Link"))
+    attack = questionary.text("Enter attack name:").ask()
+    description = questionary.text("Enter description for this attack:").ask()
+    tool = questionary.text("Enter tool name:").ask()
+    command = questionary.text("Enter command:").ask()
+    link = questionary.text("Enter reference link (optional):").ask()
 
-    kb.setdefault(domain, {}).setdefault(access, {})[attack] = {
-        "description": description,
-        "tools": {
-            tool: {
-                "command": command,
-                "link": link
-            }
+    if attack not in data[domain][access]:
+        data[domain][access][attack] = {
+            "description": description,
+            "tools": {}
         }
+
+    data[domain][access][attack]["tools"][tool] = {
+        "command": command,
+        "link": link
     }
 
-    save_json(KB_PATH, kb)
-    update_search_index(kb)
-    console.print("[bold green]✅ Entry added successfully![/bold green]")
-
-def edit_entry():
-    console.print("[bold yellow]✏️ Edit an existing entry[/bold yellow]")
-    kb = load_json(KB_PATH)
-
-    domain = autocomplete_from(list(kb.keys()), "Search for domain:")
-    access = autocomplete_from(list(kb[domain].keys()), "Search for access level:")
-    attack = autocomplete_from(list(kb[domain][access].keys()), "Search for attack:")
-    entry = kb[domain][access][attack]
-
-    new_description = prompt_or_exit(questionary.text("New Description", default=entry.get("description", "")))
-
-    tools = entry.get("tools", {})
-    tool = autocomplete_from(list(tools.keys()), "Search for tool to edit:")
-    tool_data = tools[tool]
-
-    new_command = prompt_or_exit(questionary.text("New Command", default=tool_data.get("command", "")))
-    new_link = prompt_or_exit(questionary.text("New Link", default=tool_data.get("link", "")))
-
-    entry["description"] = new_description
-    entry["tools"][tool] = {
-        "command": new_command,
-        "link": new_link
-    }
-
-    save_json(KB_PATH, kb)
-    update_search_index(kb)
-    console.print("[bold green]✅ Entry updated.[/bold green]")
+    save_data(data)
 
 def delete_entry():
-    console.print("[bold red]🗑 Delete an entry[/bold red]")
-    kb = load_json(KB_PATH)
+    data = load_data()
+    domain = questionary.select("Select domain:", choices=list(data.keys())).ask()
+    access = questionary.select("Select access level:", choices=list(data[domain].keys())).ask()
+    attack = questionary.select("Select attack to delete:", choices=list(data[domain][access].keys())).ask()
 
-    domain = autocomplete_from(list(kb.keys()), "Search for domain:")
-    access = autocomplete_from(list(kb[domain].keys()), "Search for access level:")
-    attack = autocomplete_from(list(kb[domain][access].keys()), "Search for attack to delete:")
+    del data[domain][access][attack]
 
-    if prompt_or_exit(questionary.confirm(f"Are you sure you want to delete attack '{attack}' from {domain} → {access}?")):
-        del kb[domain][access][attack]
-        if not kb[domain][access]:
-            del kb[domain][access]
-        if not kb[domain]:
-            del kb[domain]
+    if not data[domain][access]:
+        del data[domain][access]
+    if not data[domain]:
+        del data[domain]
 
-        save_json(KB_PATH, kb)
-        update_search_index(kb)
-        console.print("[bold green]✅ Entry deleted.[/bold green]")
+    save_data(data)
+
+def edit_entry():
+    data = load_data()
+    domain = questionary.select("Select domain:", choices=list(data.keys())).ask()
+    access = questionary.select("Select access level:", choices=list(data[domain].keys())).ask()
+    attack = questionary.select("Select attack to edit:", choices=list(data[domain][access].keys())).ask()
+
+    description = questionary.text("Edit description:", default=data[domain][access][attack]["description"]).ask()
+    tool = questionary.select("Select tool to edit:", choices=list(data[domain][access][attack]["tools"].keys())).ask()
+    command = questionary.text("Edit command:", default=data[domain][access][attack]["tools"][tool]["command"]).ask()
+    link = questionary.text("Edit reference link:", default=data[domain][access][attack]["tools"][tool]["link"]).ask()
+
+    data[domain][access][attack]["description"] = description
+    data[domain][access][attack]["tools"][tool] = {"command": command, "link": link}
+
+    save_data(data)
+
+def main():
+    parser = argparse.ArgumentParser(description="Manage SnortMap Knowledge Base")
+    parser.add_argument("--add", action="store_true", help="Add new attack method")
+    parser.add_argument("--delete", action="store_true", help="Delete an attack method")
+    parser.add_argument("--edit", action="store_true", help="Edit an existing attack method")
+    args = parser.parse_args()
+
+    if args.add:
+        add_entry()
+    elif args.delete:
+        delete_entry()
+    elif args.edit:
+        edit_entry()
 
 if __name__ == "__main__":
-    try:
-        if "--add" in sys.argv:
-            add_entry()
-        elif "--edit" in sys.argv:
-            edit_entry()
-        elif "--delete" in sys.argv:
-            delete_entry()
-        else:
-            console.print("""
-[cyan]Knowledge Base Manager[/cyan]
-Usage:
-  python manage_kb.py --add      # Add new entry
-  python manage_kb.py --edit     # Edit existing entry
-  python manage_kb.py --delete   # Delete existing entry
-""")
-    except KeyboardInterrupt:
-        handle_sigint(None, None)
+    main()

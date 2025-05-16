@@ -232,14 +232,5 @@
     "tool": "Burp Suite",
     "command": "Test injection in form fields or parameters with system commands",
     "link": "https://book.hacktricks.xyz/pentesting-web/command-injection"
-  },
-  {
-    "domain": null,
-    "access_level": null,
-    "attack": null,
-    "description": null,
-    "tool": null,
-    "command": null,
-    "link": null
   }
 ]
